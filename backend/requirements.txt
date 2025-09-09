@@ -1,3 +1,20 @@
 fastapi
 uvicorn[standard]
 pydantic
+
+# Job queue + storage (to come in handy soon)
+celery
+redis
+boto3
+
+# Media handling
+ffmpeg-python
+
+# Speech-to-text
+whisperx
+
+# OpenAI (for GPT-5 analysis later)
+openai
+
+# Utils
+python-dotenv

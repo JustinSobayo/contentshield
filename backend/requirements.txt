@@ -10,10 +10,10 @@ boto3
 # Media handling
 ffmpeg-python
 
-# Speech-to-text (Auto to text)
-whisperx
+# Speech-to-text (using regular whisper)
+openai-whisper
 
-# OpenAI (API call to GPT for transcript analysis, and fact checking)
+# OpenAI (for GPT analysis)
 openai
 
 # Utils

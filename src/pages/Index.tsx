@@ -28,23 +28,50 @@ const Index = () => {
     setSelectedPlatform(platformId);
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!selectedFile || !selectedPlatform) return;
     
     setIsAnalyzing(true);
     
-    // Simulate analysis process
-    setTimeout(() => {
-      // Generate a realistic risk percentage based on platform
-      const baseRisk = Math.floor(Math.random() * 60) + 20; // 20-80%
-      const platformModifier = selectedPlatform === 'youtube' ? 10 : 
-                              selectedPlatform === 'tiktok' ? -5 : 0;
-      const finalRisk = Math.max(5, Math.min(95, baseRisk + platformModifier));
+    try {
+      // Step 1: Transcribe video
+      const formData = new FormData();
+      formData.append('file', selectedFile);
       
-      setRiskPercentage(finalRisk);
-      setIsAnalyzing(false);
+      const transcribeResponse = await fetch('http://localhost:8000/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!transcribeResponse.ok) {
+        throw new Error('Transcription failed');
+      }
+      
+      const { text } = await transcribeResponse.json();
+      
+      // Step 2: Analyze transcript
+      const analyzeResponse = await fetch('http://localhost:8000/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: text,
+          platform: selectedPlatform
+        })
+      });
+      
+      if (!analyzeResponse.ok) {
+        throw new Error('Analysis failed');
+      }
+      
+      const analysis = await analyzeResponse.json();
+      setRiskPercentage(Math.round(analysis.takedown_likelihood * 100));
       setAnalysisComplete(true);
-    }, 3000);
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      alert('Analysis failed. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const canAnalyze = selectedFile && selectedPlatform && !isAnalyzing;

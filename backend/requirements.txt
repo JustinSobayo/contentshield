@@ -13,8 +13,11 @@ ffmpeg-python
 # Speech-to-text (using regular whisper)
 openai-whisper
 
-# OpenAI (for GPT analysis)
-openai
+# LlamaIndex and RAG pipeline
+llama-index
+google-generativeai
+chromadb
+pypdf
 
 # Utils
 python-dotenv

@@ -2,6 +2,10 @@ fastapi
 uvicorn[standard]
 pydantic
 
+#For limiting API requests
+slowapi
+python-multipart
+
 # Job queue + storage (to come in handy soon)
 celery
 redis

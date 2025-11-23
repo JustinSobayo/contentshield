@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
@@ -7,7 +7,12 @@ import whisper
 import json
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
+import logging
+import traceback
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 # LlamaIndex imports
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings, StorageContext
 from llama_index.llms.gemini import Gemini
@@ -16,11 +21,29 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 import chromadb
 import google.generativeai as genai
 
+#For limiting API requests
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Load environment variables
-load_dotenv()
+# Construct absolute path to backend directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.dirname(BASE_DIR) # parent of app is backend
+load_dotenv(os.path.join(BACKEND_DIR, ".env"))
 
 # Create the FastAPI app instance
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 app.add_middleware(
@@ -39,8 +62,14 @@ app.add_middleware(
 )
 
 # Configure LlamaIndex with Gemini
-Settings.llm = Gemini(model="gemini-2.5-pro")
-Settings.embed_model = GeminiEmbedding(model_name="models/embedding-001")
+# Configure Gemini
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    logger.warning("GEMINI_API_KEY not found in environment variables!")
+
+genai.configure(api_key=api_key)
+Settings.llm = Gemini(model="models/gemini-flash-latest", api_key=api_key)
+Settings.embed_model = GeminiEmbedding(model_name="models/embedding-001", api_key=api_key)
 
 # Global variables for models and index
 whisper_model = None
@@ -84,7 +113,8 @@ def _ensure_policy_index():
     if policy_index is None:
         try:
             # Initialize Chroma client
-            chroma_client = chromadb.PersistentClient(path="./chroma_db")#chroma client is initialized as a chromadb object so that i can make it a perstistant client such that data is stored on the disk so data survives server restarts
+            chroma_path = os.path.join(BACKEND_DIR, "chroma_db")
+            chroma_client = chromadb.PersistentClient(path=chroma_path)#chroma client is initialized as a chromadb object so that i can make it a perstistant client such that data is stored on the disk so data survives server restarts
             chroma_collection = chroma_client.get_or_create_collection("policies")#collections used so that i can be able to have different types of data stored inside of the database as containers. for example, one container would be the user transcripts and another container would be the policy documents.
             
             # Create vector store
@@ -92,8 +122,9 @@ def _ensure_policy_index():
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             
             # Load documents if policy_docs folder exists
-            if os.path.exists("policy_docs"):
-                documents = SimpleDirectoryReader("policy_docs").load_data()
+            policy_docs_path = os.path.join(BACKEND_DIR, "policy_docs")
+            if os.path.exists(policy_docs_path):
+                documents = SimpleDirectoryReader(policy_docs_path).load_data()
                 if documents:
                     policy_index = VectorStoreIndex.from_documents(
                         documents, 
@@ -132,7 +163,10 @@ def test_gemini_connection():
 
 # Transcribe video endpoint
 @app.post("/transcribe")
-async def transcribe_video(file: UploadFile = File(...)):
+@limiter.limit("5/minute")
+def transcribe_video(request: Request, file: UploadFile = File(...)):
+    logger.info(f"Transcribing file: {file.filename}")
+    print(f"DEBUG: Transcribing file: {file.filename}")
     _ensure_whisper()
     
     try:
@@ -145,7 +179,7 @@ async def transcribe_video(file: UploadFile = File(...)):
         
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
+            content = file.file.read()
             tmp.write(content)
             path = tmp.name
         
@@ -162,6 +196,8 @@ async def transcribe_video(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Transcription failed: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
     finally:
         # Clean up temporary file
@@ -173,7 +209,10 @@ async def transcribe_video(file: UploadFile = File(...)):
 
 # Analyze content with RAG pipeline
 @app.post("/analyze", response_model=AnalyzeResponse)
-def analyze_content(req: AnalyzeRequest):
+@limiter.limit("5/minute")
+def analyze_content(request: Request, req: AnalyzeRequest):
+    logger.info(f"Analyzing content for platform: {req.platform}")
+    print(f"DEBUG: Analyzing content for platform: {req.platform}")
     """
     This function analyzes video transcripts for policy violations using RAG.
     
@@ -190,18 +229,19 @@ def analyze_content(req: AnalyzeRequest):
     try:
         policy_index = _ensure_policy_index()
         query_engine = policy_index.as_query_engine()#query engine is used to search the policy documents.
+        # 1. First, we need to find *general* policies about what is allowed/disallowed.
+        # Since we don't know the violation yet, we ask about "prohibited content" and "takedown reasons".
         policy_query = f"""
-            Find {req.platform} policy violations that would cause video takedown.
-            Analyze this content for violations: {req.transcript}
-            Focus on: health claims, hate speech, advertising disclosure, misinformation.
+            What are the {req.platform} policies regarding prohibited content, community guidelines violations, and reasons for video takedowns?
+            Include rules on safety, integrity, and sensitive topics.
             """
         policy_response = query_engine.query(policy_query)
         policy_content = str(policy_response)
-        analysis_prompt = ff"""
+        analysis_prompt = f"""
             You are analyzing a video transcript for policy violations on {req.platform}.
             
             POLICY CONTEXT (retrieved from policy documents):
-            {policy_context}
+            {policy_content}
             
             VIDEO TRANSCRIPT:
             {req.transcript}
@@ -225,13 +265,28 @@ def analyze_content(req: AnalyzeRequest):
         model = _ensure_gemini()
         response = model.generate_content(analysis_prompt)
         content = response.text
-        import json
+        # Helper to clean JSON (LLMs often add markdown backticks)
+        def clean_json_text(text: str) -> str:
+            text = text.strip()
+            # Remove markdown code blocks if present
+            if text.startswith("```"):
+                # Find the first newline
+                first_newline = text.find("\n")
+                if first_newline != -1:
+                    text = text[first_newline+1:]
+            if text.endswith("```"):
+                text = text[:-3]
+            return text.strip()
+
         try:
-            result = json.loads(content)
+            cleaned_content = clean_json_text(content)
+            result = json.loads(cleaned_content)
             takedown_percentage = result.get("takedown_percentage", 0)
             issues = result.get("issues", [])
-        except:
-            raise HTTPException(status_code=500, detail="Analysis failed")
+        except Exception as json_err:
+            logger.error(f"JSON Parsing failed. Content was: {content}")
+            logger.error(f"JSON Error: {str(json_err)}")
+            raise HTTPException(status_code=500, detail="Analysis failed - Invalid JSON from LLM")
         return {
             "status": "success",
             "message": content,
@@ -239,6 +294,8 @@ def analyze_content(req: AnalyzeRequest):
             "issues": issues        
         }
     except Exception as e:
+         logger.error(f"Analysis failed: {str(e)}")
+         logger.error(traceback.format_exc())
          return {
             "platform": req.platform,
             "takedown_likelihood": 0.5,

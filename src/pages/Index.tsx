@@ -11,7 +11,7 @@ const Index = () => {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [riskPercentage, setRiskPercentage] = useState(0);
+  const [riskLevel, setRiskLevel] = useState<string>("");
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -30,25 +30,25 @@ const Index = () => {
 
   const handleAnalyze = async () => {
     if (!selectedFile || !selectedPlatform) return;
-    
+
     setIsAnalyzing(true);
-    
+
     try {
       // Step 1: Transcribe video
       const formData = new FormData();
       formData.append('file', selectedFile);
-      
+
       const transcribeResponse = await fetch('http://localhost:8000/transcribe', {
         method: 'POST',
         body: formData
       });
-      
+
       if (!transcribeResponse.ok) {
         throw new Error('Transcription failed');
       }
-      
+
       const { text } = await transcribeResponse.json();
-      
+
       // Step 2: Analyze transcript
       const analyzeResponse = await fetch('http://localhost:8000/analyze', {
         method: 'POST',
@@ -58,13 +58,13 @@ const Index = () => {
           platform: selectedPlatform
         })
       });
-      
+
       if (!analyzeResponse.ok) {
         throw new Error('Analysis failed');
       }
-      
+
       const analysis = await analyzeResponse.json();
-      setRiskPercentage(Math.round(analysis.takedown_likelihood * 100));
+      setRiskLevel(analysis.risk_level);
       setAnalysisComplete(true);
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -86,17 +86,13 @@ const Index = () => {
               <Shield className="h-8 w-8 text-primary" />
               <span className="text-xl font-bold text-foreground">Content Shield</span>
             </div>
-            
+
             <nav className="hidden md:flex items-center space-x-8">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 Features
               </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Pricing
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Enterprise
-              </a>
+
+
               <Button variant="outline" size="sm">
                 Sign In
               </Button>
@@ -111,16 +107,16 @@ const Index = () => {
       {/* Main Content */}
       <main className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          
+
           {/* Analysis Results */}
           {analysisComplete && (
-            <AnalysisResults 
-              riskPercentage={riskPercentage}
+            <AnalysisResults
+              riskLevel={riskLevel}
               platform={selectedPlatform!}
               fileName={selectedFile!.name}
             />
           )}
-          
+
           {/* Analysis Loading */}
           {isAnalyzing && (
             <div className="text-center py-16">
@@ -130,7 +126,7 @@ const Index = () => {
                     <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
                     <div className="absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-foreground">
                       Analyzing Your Content
@@ -139,35 +135,35 @@ const Index = () => {
                       Processing audio transcript and checking platform policies...
                     </p>
                   </div>
-                  
+
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-gradient-primary h-2 rounded-full animate-pulse" style={{width: '65%'}}></div>
+                    <div className="bg-gradient-primary h-2 rounded-full animate-pulse" style={{ width: '65%' }}></div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          
+
           {/* Upload and Platform Selection */}
           {!analysisComplete && !isAnalyzing && (
             <>
-              <VideoUpload 
+              <VideoUpload
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedFile}
                 onClearFile={handleClearFile}
               />
-              
+
               {selectedFile && (
-                <PlatformSelector 
+                <PlatformSelector
                   selectedPlatform={selectedPlatform}
                   onPlatformSelect={handlePlatformSelect}
                 />
               )}
-              
+
               {/* Analyze Button */}
               {canAnalyze && (
                 <div className="text-center">
-                  <Button 
+                  <Button
                     onClick={handleAnalyze}
                     size="lg"
                     className="bg-gradient-primary text-primary-foreground hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-corporate"
@@ -185,17 +181,17 @@ const Index = () => {
               )}
             </>
           )}
-          
+
           {/* Reset Button */}
           {analysisComplete && (
             <div className="text-center">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   setSelectedFile(null);
                   setSelectedPlatform(null);
                   setAnalysisComplete(false);
-                  setRiskPercentage(0);
+                  setRiskLevel("");
                 }}
                 size="lg"
               >
@@ -210,13 +206,11 @@ const Index = () => {
       <footer className="border-t border-border bg-card/50 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
-            <span>© 2024 Content Shield Enterprise</span>
+            <span>© 2025 Content Shield</span>
             <span>•</span>
             <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
             <span>•</span>
             <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
-            <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Contact Sales</a>
           </div>
         </div>
       </footer>

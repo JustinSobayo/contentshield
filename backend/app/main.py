@@ -69,7 +69,7 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 Settings.llm = Gemini(model="models/gemini-flash-latest", api_key=api_key)
-Settings.embed_model = GeminiEmbedding(model_name="models/embedding-001", api_key=api_key)
+Settings.embed_model = GeminiEmbedding(model_name="models/text-embedding-004", api_key=api_key)
 
 # Global variables for models and index
 whisper_model = None
@@ -83,7 +83,7 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     platform: str
-    takedown_likelihood: float
+    risk_level: str
     issues: List[Dict[str, Any]]
 
 # Health check endpoint
@@ -144,8 +144,8 @@ def _ensure_policy_index():
     
     return policy_index
 
-# Test OpenAI connection (now Gemini)
-@app.get("/test-openai")
+# Test gemini connection
+@app.get("/test-gemini")
 def test_gemini_connection():
     try:
         model = _ensure_gemini()
@@ -161,7 +161,6 @@ def test_gemini_connection():
             "message": str(e)
         }
 
-# Transcribe video endpoint
 @app.post("/transcribe")
 @limiter.limit("5/minute")
 def transcribe_video(request: Request, file: UploadFile = File(...)):
@@ -170,20 +169,14 @@ def transcribe_video(request: Request, file: UploadFile = File(...)):
     _ensure_whisper()
     
     try:
-        # Validate file type
         if not file.content_type or not file.content_type.startswith("video/"):
             raise HTTPException(status_code=400, detail="Only video files are allowed")
-        
-        # Get file extension
         suffix = os.path.splitext(file.filename or "")[1] or ".mp4"
-        
-        # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             content = file.file.read()
             tmp.write(content)
             path = tmp.name
         
-        # Transcribe with Whisper
         result = whisper_model.transcribe(path, fp16=False)
         text = result.get("text", "").strip()
         language = result.get("language", "en")
@@ -200,7 +193,6 @@ def transcribe_video(request: Request, file: UploadFile = File(...)):
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
     finally:
-        # Clean up temporary file
         try:
             if 'path' in locals() and os.path.exists(path):
                 os.remove(path)
@@ -211,32 +203,57 @@ def transcribe_video(request: Request, file: UploadFile = File(...)):
 @app.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit("5/minute")
 def analyze_content(request: Request, req: AnalyzeRequest):
-    logger.info(f"Analyzing content for platform: {req.platform}")
-    print(f"DEBUG: Analyzing content for platform: {req.platform}")
-    """
-    This function analyzes video transcripts for policy violations using RAG.
+    logger.info(f"Analyzing content for platform: {req.platform}")    
+    # Initialize variables to track progress
+    policy_index = None
+    query_engine = None
+    policy_content = ""
     
-    Steps:
-    1. Get the policy index (vector database of policy documents)
-    2. Create a query engine to search the policy documents
-    3. Query for relevant policies based on the transcript
-    4. Build a prompt that includes both policy context and transcript
-    5. Use Gemini to analyze and generate a structured response
-    6. Parse the Gemini response into the required format
-    7. Return the analysis result
-    """
-    #get the policy index (vector database of policy documents)
+    # --- STEP 1: Vector DB & Indexing ---
     try:
         policy_index = _ensure_policy_index()
-        query_engine = policy_index.as_query_engine()#query engine is used to search the policy documents.
-        # 1. First, we need to find *general* policies about what is allowed/disallowed.
-        # Since we don't know the violation yet, we ask about "prohibited content" and "takedown reasons".
+        query_engine = policy_index.as_query_engine()
+    except Exception as e:
+        logger.error(f"Vector DB Error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "platform": req.platform,
+            "risk_level": "Unknown",
+            "issues": [{
+                "category": "System Error",
+                "snippet": "Vector Database Initialization Failed",
+                "rationale": f"Could not access policy database. Reason: {str(e)}",
+                "policy_citations": []
+            }]
+        }
+
+    # --- STEP 2: RAG Retrieval ---
+    try:
         policy_query = f"""
             What are the {req.platform} policies regarding prohibited content, community guidelines violations, and reasons for video takedowns?
             Include rules on safety, integrity, and sensitive topics.
             """
         policy_response = query_engine.query(policy_query)
         policy_content = str(policy_response)
+        print(f"DEBUG: Policy content: {policy_content}")
+    except Exception as e:
+        logger.error(f"RAG Retrieval Error: {str(e)}")
+        logger.error(traceback.format_exc())
+        # can optionally continue without policy context, or fail here. 
+        # fail to be explicit about the error.
+        return {
+            "platform": req.platform,
+            "risk_level": "Unknown",
+            "issues": [{
+                "category": "System Error",
+                "snippet": "Policy Retrieval Failed",
+                "rationale": f"Could not retrieve relevant policies. Reason: {str(e)}",
+                "policy_citations": []
+            }]
+        }
+
+    # --- STEP 3: LLM Analysis ---
+    try:
         analysis_prompt = f"""
             You are analyzing a video transcript for policy violations on {req.platform}.
             
@@ -246,11 +263,11 @@ def analyze_content(request: Request, req: AnalyzeRequest):
             VIDEO TRANSCRIPT:
             {req.transcript}
             
-            TASK: Calculate takedown likelihood percentage (0-100) based on policy violations.
+            TASK: Determine the risk level (Low, Medium, High) for takedown based on policy violations.
             
             Return JSON format:
             {{
-                "takedown_percentage": 75,
+                "risk_level": "High",
                 "platform": "{req.platform}",
                 "issues": [
                     {{
@@ -262,47 +279,64 @@ def analyze_content(request: Request, req: AnalyzeRequest):
                 ]
             }}
             """
+        print(f"DEBUG: Analysis prompt: {analysis_prompt}")
         model = _ensure_gemini()
+        print(f"DEBUG: Model: {model}")
         response = model.generate_content(analysis_prompt)
+        print(f"DEBUG: Response: {response}")
         content = response.text
-        # Helper to clean JSON (LLMs often add markdown backticks)
-        def clean_json_text(text: str) -> str:
-            text = text.strip()
-            # Remove markdown code blocks if present
-            if text.startswith("```"):
-                # Find the first newline
-                first_newline = text.find("\n")
-                if first_newline != -1:
-                    text = text[first_newline+1:]
-            if text.endswith("```"):
-                text = text[:-3]
-            return text.strip()
-
-        try:
-            cleaned_content = clean_json_text(content)
-            result = json.loads(cleaned_content)
-            takedown_percentage = result.get("takedown_percentage", 0)
-            issues = result.get("issues", [])
-        except Exception as json_err:
-            logger.error(f"JSON Parsing failed. Content was: {content}")
-            logger.error(f"JSON Error: {str(json_err)}")
-            raise HTTPException(status_code=500, detail="Analysis failed - Invalid JSON from LLM")
+        print(f"DEBUG: Content: {content}")
+    except Exception as e:
+        logger.error(f"LLM Generation Error: {str(e)}")
+        logger.error(traceback.format_exc())
         return {
-            "status": "success",
-            "message": content,
-            "takedown_percentage": takedown_percentage,
+            "platform": req.platform,
+            "risk_level": "Unknown",
+            "issues": [{
+                "category": "System Error",
+                "snippet": "LLM Analysis Failed",
+                "rationale": f"AI Model failed to generate response. Reason: {str(e)}",
+                "policy_citations": []
+            }]
+        }
+
+    # --- STEP 4: JSON Parsing ---
+    # Helper to clean JSON (LLMs often add markdown backticks)
+    def clean_json_text(text: str) -> str:
+        text = text.strip()
+        # Remove markdown code blocks if present
+        if text.startswith("```"):
+            # Find the first newline
+            first_newline = text.find("\n")
+            if first_newline != -1:
+                text = text[first_newline+1:]
+        if text.endswith("```"):
+            text = text[:-3]
+        json_text = text.strip()
+        print(f"DEBUG: Cleaned content: {json_text}")
+        return json_text
+
+    try:
+        json_text = clean_json_text(content)
+        result = json.loads(json_text)
+        
+        risk_level = result.get("risk_level", "Medium")
+        issues = result.get("issues", [])        
+        return {
+            "platform": req.platform,
+            "risk_level": risk_level,
             "issues": issues        
         }
-    except Exception as e:
-         logger.error(f"Analysis failed: {str(e)}")
-         logger.error(traceback.format_exc())
-         return {
+    except Exception as json_err:
+        logger.error(f"JSON Parsing failed. Content was: {content}")
+        logger.error(f"JSON Error: {str(json_err)}")
+        return {
             "platform": req.platform,
-            "takedown_likelihood": 0.5,
+            "risk_level": "Unknown",
             "issues": [{
-                "category": "Analysis Error",
-                "snippet": "",
-                "rationale": f"Analysis failed: {str(e)}",
+                "category": "System Error",
+                "snippet": "Response Parsing Failed",
+                "rationale": f"Could not parse AI response as JSON. Error: {str(json_err)}",
                 "policy_citations": []
             }]
         }

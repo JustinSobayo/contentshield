@@ -7,25 +7,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface AnalysisResultsProps {
-  riskPercentage: number;
+  riskLevel: string;
   platform: string;
   fileName: string;
 }
 
-export default function AnalysisResults({ 
-  riskPercentage, 
-  platform, 
-  fileName 
+export default function AnalysisResults({
+  riskLevel,
+  platform,
+  fileName
 }: AnalysisResultsProps) {
   const [showReport, setShowReport] = useState(false);
 
-  const getRiskLevel = (percentage: number) => {
-    if (percentage >= 80) return { level: 'HIGH', color: 'destructive', icon: AlertTriangle };
-    if (percentage >= 50) return { level: 'MEDIUM', color: 'warning', icon: AlertTriangle };
+  const getRiskLevel = (level: string) => {
+    const normalizedLevel = level.toUpperCase();
+    if (normalizedLevel === 'HIGH') return { level: 'HIGH', color: 'destructive', icon: AlertTriangle };
+    if (normalizedLevel === 'MEDIUM') return { level: 'MEDIUM', color: 'warning', icon: AlertTriangle };
     return { level: 'LOW', color: 'success', icon: CheckCircle2 };
   };
 
-  const risk = getRiskLevel(riskPercentage);
+  const risk = getRiskLevel(riskLevel);
   const RiskIcon = risk.icon;
 
   const flaggedContent = [
@@ -36,7 +37,7 @@ export default function AnalysisResults({
       severity: "medium"
     },
     {
-      timestamp: "02:15", 
+      timestamp: "02:15",
       text: "Check out this brand new product everyone's talking about",
       concern: "Advertising disclosure requirements may apply",
       severity: "low"
@@ -57,7 +58,7 @@ export default function AnalysisResults({
       action: "Add '#ad' or 'Sponsored by [Brand]' in description"
     },
     {
-      priority: "medium", 
+      priority: "medium",
       title: "Modify Health Claims",
       description: "Replace absolute statements with qualified language",
       action: "Change 'will change your life' to 'may help improve your experience'"
@@ -79,7 +80,7 @@ export default function AnalysisResults({
             <div className={cn(
               "p-6 rounded-full",
               risk.color === 'destructive' && "bg-destructive/10",
-              risk.color === 'warning' && "bg-warning/10", 
+              risk.color === 'warning' && "bg-warning/10",
               risk.color === 'success' && "bg-success/10"
             )}>
               <RiskIcon className={cn(
@@ -90,28 +91,25 @@ export default function AnalysisResults({
               )} />
             </div>
           </div>
-          
+
           <CardTitle className="text-3xl font-bold text-foreground">
             Analysis Complete
           </CardTitle>
-          
+
           <div className="text-lg text-muted-foreground">
             {fileName} • {platform.charAt(0).toUpperCase() + platform.slice(1)}
           </div>
         </CardHeader>
-        
+
         <CardContent className="text-center space-y-6">
           <div className="space-y-4">
-            <div className="text-6xl font-bold text-foreground">
-              {riskPercentage}%
-            </div>
             <div className="text-xl text-muted-foreground">
               Takedown Risk Likelihood
             </div>
-            <Badge 
+            <Badge
               variant={risk.color === 'destructive' ? 'destructive' : 'secondary'}
               className={cn(
-                "text-lg px-6 py-2",
+                "text-3xl px-8 py-4",
                 risk.color === 'warning' && "bg-warning text-warning-foreground",
                 risk.color === 'success' && "bg-success text-success-foreground"
               )}
@@ -119,28 +117,28 @@ export default function AnalysisResults({
               {risk.level} RISK
             </Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
             <div className="bg-muted/50 p-4 rounded-lg">
               <Clock className="h-6 w-6 text-accent-primary mx-auto mb-2" />
               <div className="text-sm font-medium text-foreground">Analysis Time</div>
               <div className="text-xs text-muted-foreground">2.3 seconds</div>
             </div>
-            
+
             <div className="bg-muted/50 p-4 rounded-lg">
               <FileText className="h-6 w-6 text-accent-primary mx-auto mb-2" />
               <div className="text-sm font-medium text-foreground">Issues Found</div>
               <div className="text-xs text-muted-foreground">{flaggedContent.length} potential concerns</div>
             </div>
-            
+
             <div className="bg-muted/50 p-4 rounded-lg">
               <CheckCircle2 className="h-6 w-6 text-success mx-auto mb-2" />
               <div className="text-sm font-medium text-foreground">Confidence</div>
               <div className="text-xs text-muted-foreground">94% accuracy</div>
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={() => setShowReport(!showReport)}
             size="lg"
             className="mt-6"
@@ -159,7 +157,7 @@ export default function AnalysisResults({
               <span>Compliance Analysis Report</span>
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent>
             <Tabs defaultValue="flagged" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
@@ -167,7 +165,7 @@ export default function AnalysisResults({
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                 <TabsTrigger value="policies">Policy References</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="flagged" className="space-y-4 mt-6">
                 {flaggedContent.map((item, index) => (
                   <div key={index} className="border border-border rounded-lg p-4 space-y-3">
@@ -175,9 +173,9 @@ export default function AnalysisResults({
                       <Badge variant="outline" className="font-mono">
                         {item.timestamp}
                       </Badge>
-                      <Badge 
-                        variant={item.severity === 'high' ? 'destructive' : 
-                               item.severity === 'medium' ? 'secondary' : 'outline'}
+                      <Badge
+                        variant={item.severity === 'high' ? 'destructive' :
+                          item.severity === 'medium' ? 'secondary' : 'outline'}
                       >
                         {item.severity.toUpperCase()}
                       </Badge>
@@ -191,15 +189,15 @@ export default function AnalysisResults({
                   </div>
                 ))}
               </TabsContent>
-              
+
               <TabsContent value="recommendations" className="space-y-4 mt-6">
                 {recommendations.map((rec, index) => (
                   <div key={index} className="border border-border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-foreground">{rec.title}</h3>
-                      <Badge 
-                        variant={rec.priority === 'high' ? 'destructive' : 
-                               rec.priority === 'medium' ? 'secondary' : 'outline'}
+                      <Badge
+                        variant={rec.priority === 'high' ? 'destructive' :
+                          rec.priority === 'medium' ? 'secondary' : 'outline'}
                       >
                         {rec.priority.toUpperCase()}
                       </Badge>
@@ -213,7 +211,7 @@ export default function AnalysisResults({
                   </div>
                 ))}
               </TabsContent>
-              
+
               <TabsContent value="policies" className="space-y-4 mt-6">
                 <div className="space-y-4">
                   <div className="border border-border rounded-lg p-4">
@@ -231,7 +229,7 @@ export default function AnalysisResults({
                       "Creators must clearly disclose when content includes paid promotions, sponsorships, or affiliate marketing."
                     </p>
                   </div>
-                  
+
                   <div className="border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-foreground">FTC Advertising Guidelines</h3>

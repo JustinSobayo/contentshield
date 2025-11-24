@@ -61,12 +61,12 @@ def test_rate_limit():
             print(f"Request {i}: Status Code {response.status_code}")
             
             if response.status_code == 429:
-                print("✅ Rate limit triggered successfully!")
+                print("Rate limit triggered successfully!")
                 return
         except Exception as e:
             print(f"Request {i}: Error {e}")
             
-    print("❌ Rate limit was NOT triggered.")
+    print("Rate limit was NOT triggered.")
 
 if __name__ == "__main__":
     test_rate_limit()

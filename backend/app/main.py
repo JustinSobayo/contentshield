@@ -103,8 +103,7 @@ def _ensure_gemini():
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not found")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-2.5-pro")
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 # Document processing and indexing
 def _ensure_policy_index():

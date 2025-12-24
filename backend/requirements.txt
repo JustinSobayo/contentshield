@@ -19,6 +19,9 @@ openai-whisper
 
 # LlamaIndex and RAG pipeline
 llama-index
+llama-index-llms-gemini
+llama-index-embeddings-gemini
+llama-index-vector-stores-chroma
 google-generativeai
 chromadb
 pypdf

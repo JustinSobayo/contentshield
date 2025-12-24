@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+
+# Application Specific
+chroma_db/
+policy_docs/

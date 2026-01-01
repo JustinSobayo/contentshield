@@ -12,16 +12,19 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [riskLevel, setRiskLevel] = useState<string>("");
+  const [analysisData, setAnalysisData] = useState<any>(null);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
     setAnalysisComplete(false);
+    setAnalysisData(null);
   };
 
   const handleClearFile = () => {
     setSelectedFile(null);
     setSelectedPlatform(null);
     setAnalysisComplete(false);
+    setAnalysisData(null);
   };
 
   const handlePlatformSelect = (platformId: string) => {
@@ -34,29 +37,17 @@ const Index = () => {
     setIsAnalyzing(true);
 
     try {
-      // Step 1: Transcribe video
+      // Single step: Upload file directly to Gemini 1.5 Flash multimodal analysis
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('platform', selectedPlatform);
 
-      const transcribeResponse = await fetch('http://localhost:8000/transcribe', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      console.log("Analyze Request - API_URL:", API_URL);
+      console.log("Analyze Request - Fetching:", `${API_URL}/analyze`);
+      const analyzeResponse = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
-        body: formData
-      });
-
-      if (!transcribeResponse.ok) {
-        throw new Error('Transcription failed');
-      }
-
-      const { text } = await transcribeResponse.json();
-
-      // Step 2: Analyze transcript
-      const analyzeResponse = await fetch('http://localhost:8000/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: text,
-          platform: selectedPlatform
-        })
+        body: formData // No Content-Type header needed, browser sets it for FormData
       });
 
       if (!analyzeResponse.ok) {
@@ -64,6 +55,7 @@ const Index = () => {
       }
 
       const analysis = await analyzeResponse.json();
+      setAnalysisData(analysis);
       setRiskLevel(analysis.risk_level);
       setAnalysisComplete(true);
     } catch (error) {
@@ -114,6 +106,8 @@ const Index = () => {
               riskLevel={riskLevel}
               platform={selectedPlatform!}
               fileName={selectedFile!.name}
+              summaryRationale={analysisData?.summary_rationale}
+              issues={analysisData?.issues}
             />
           )}
 

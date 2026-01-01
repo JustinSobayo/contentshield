@@ -20,7 +20,10 @@ fi
 echo "Starting Backend (Port 8000)..."
 source backend/venv/bin/activate
 # We run uvicorn in the background but let it print to stdout/stderr
-uvicorn backend.app.main:app --reload --port 8000 --log-level info &
+set -a
+[ -f backend/.env ] && source backend/.env
+set +a
+PYTHONPATH=$PYTHONPATH:$(pwd)/backend uvicorn backend.app.main:app --reload --port 8000 --log-level info &
 BACKEND_PID=$!
 
 # Give backend a moment to start
@@ -31,7 +34,7 @@ echo "Starting Frontend (Port 8080)..."
 npm run dev -- --port 8080 &
 FRONTEND_PID=$!
 
-echo "✅ Both servers started. Backend logs will appear below:"
+echo "Both servers started. Backend logs will appear below:"
 echo "-----------------------------------------------------"
 
 # Wait for both

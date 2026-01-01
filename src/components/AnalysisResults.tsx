@@ -1,21 +1,33 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileText, ExternalLink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, FileText, ExternalLink, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+interface Issue {
+  category: string;
+  timestamp?: string;
+  snippet: string;
+  rationale: string;
+  policy_citations: string[];
+}
+
 interface AnalysisResultsProps {
   riskLevel: string;
   platform: string;
   fileName: string;
+  summaryRationale?: string;
+  issues?: Issue[];
 }
 
 export default function AnalysisResults({
   riskLevel,
   platform,
-  fileName
+  fileName,
+  summaryRationale,
+  issues = []
 }: AnalysisResultsProps) {
   const [showReport, setShowReport] = useState(false);
 
@@ -29,45 +41,22 @@ export default function AnalysisResults({
   const risk = getRiskLevel(riskLevel);
   const RiskIcon = risk.icon;
 
-  const flaggedContent = [
-    {
-      timestamp: "00:45",
-      text: "This is absolutely amazing and revolutionary",
-      concern: "Potential copyright claim triggering language",
-      severity: "medium"
-    },
-    {
-      timestamp: "02:15",
-      text: "Check out this brand new product everyone's talking about",
-      concern: "Advertising disclosure requirements may apply",
-      severity: "low"
-    },
-    {
-      timestamp: "03:30",
-      text: "This will change your life forever",
-      concern: "Medical/health claims without evidence",
-      severity: "high"
-    }
-  ];
+  // Map backend issues to frontend display format
+  const flaggedContent = issues.map(issue => ({
+    timestamp: issue.timestamp || "N/A",
+    text: issue.snippet,
+    concern: issue.category,
+    severity: "medium", // Defaulting severity as backend doesn't provide it per issue yet
+    rationale: issue.rationale
+  }));
 
   const recommendations = [
-    {
-      priority: "high",
-      title: "Add Advertising Disclosure",
-      description: "Include proper FTC compliance disclosure for sponsored content",
-      action: "Add '#ad' or 'Sponsored by [Brand]' in description"
-    },
+    // Keep dummy recommendations for now or generate them from issues if possible
     {
       priority: "medium",
-      title: "Modify Health Claims",
-      description: "Replace absolute statements with qualified language",
-      action: "Change 'will change your life' to 'may help improve your experience'"
-    },
-    {
-      priority: "low",
-      title: "Review Copyright References",
-      description: "Ensure all referenced content has proper attribution",
-      action: "Add source citations in video description"
+      title: "Review Policy Violations",
+      description: "Address the specific issues flagged in the detailed report.",
+      action: "Check platform guidelines"
     }
   ];
 
@@ -117,6 +106,17 @@ export default function AnalysisResults({
               {risk.level} RISK
             </Badge>
           </div>
+
+          {summaryRationale && (
+            <div className="bg-muted p-4 rounded-lg mt-4 max-w-2xl mx-auto">
+              <h4 className="font-semibold text-foreground mb-2 flex items-center justify-center gap-2">
+                <Shield className="h-4 w-4" /> AI Analyst Verdict
+              </h4>
+              <p className="text-sm text-muted-foreground italic">
+                "{summaryRationale}"
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
             <div className="bg-muted/50 p-4 rounded-lg">
@@ -186,6 +186,11 @@ export default function AnalysisResults({
                     <p className="text-sm text-muted-foreground">
                       <strong>Concern:</strong> {item.concern}
                     </p>
+                    {item.rationale && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <strong>Rationale:</strong> {item.rationale}
+                      </p>
+                    )}
                   </div>
                 ))}
               </TabsContent>

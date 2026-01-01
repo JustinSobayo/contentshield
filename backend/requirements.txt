@@ -1,30 +1,16 @@
 fastapi
 uvicorn[standard]
 pydantic
-
-#For limiting API requests
-slowapi
+pydantic-settings
+python-dotenv
 python-multipart
 
-# Job queue + storage (to come in handy soon)
-celery
+# Rate limiting
+slowapi
 redis
-boto3
 
-# Media handling
-ffmpeg-python
+# Google Gemini (Gen AI)
+google-genai
 
-# Speech-to-text (using regular whisper)
-openai-whisper
-
-# LlamaIndex and RAG pipeline
-llama-index
-llama-index-llms-gemini
-llama-index-embeddings-gemini
-llama-index-vector-stores-chroma
-google-generativeai
-chromadb
-pypdf
-
-# Utils
-python-dotenv
+# LlamaIndex (keeping core for potential future usage, though simplified now)
+llama-index-core

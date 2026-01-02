@@ -24,6 +24,8 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:8080",
+        "https://contentshield.vercel.app",
+        "https://contentshield-*.vercel.app",  # Preview deployments
         settings.FRONTEND_ORIGIN,
     ],
     allow_credentials=True,

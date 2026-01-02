@@ -62,10 +62,10 @@ def analyze_multimodal(prompt: str, file_path: str = None, mime_type: str = None
         # These are to prevent the model from blocking its OWN analysis output
         # when it describes "dangerous" content it found.
         safety_settings = [
-            {"category": "HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
         ]
 
         response = client.models.generate_content(

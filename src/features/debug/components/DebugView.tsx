@@ -24,7 +24,13 @@ export const DebugView: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+            // Proactive Fix: Add https if protocol is missing
+            if (API_URL && !API_URL.startsWith('http')) {
+                API_URL = `https://${API_URL}`;
+            }
+
             const response = await fetch(`${API_URL}/debug`);
             if (!response.ok) throw new Error(`Status: ${response.status}`);
             const data = await response.json();

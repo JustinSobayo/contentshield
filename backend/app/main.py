@@ -27,7 +27,7 @@ app.add_middleware(
         "https://contentshieldai.vercel.app",
         settings.FRONTEND_ORIGIN,
     ],
-    allow_origin_regex=r"https://contentshieldai-.*\.vercel\.app",
+    allow_origin_regex=r"https://(contentshield|contentshieldai)-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

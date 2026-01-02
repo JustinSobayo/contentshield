@@ -25,9 +25,10 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:8080",
         "https://contentshield.vercel.app",
-        "https://contentshield-*.vercel.app",  # Preview deployments
+        "https://contentshield.com",
         settings.FRONTEND_ORIGIN,
     ],
+    allow_origin_regex=r"https://contentshield-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -24,9 +24,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Expose port (Railway overrides this with $PORT)
 EXPOSE 8000
 
-# Healthcheck to help Railway
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
-
-# Command to run the application
+# Start application
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

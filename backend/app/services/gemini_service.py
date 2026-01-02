@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 # Initialize the Gemini Client
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# Use Gemini 2.0 Flash (Confirmed available via list_models)
-MODEL_NAME = "gemini-2.0-flash"
+# Use Gemini Flash Latest (Confirmed available via list_models)
+MODEL_NAME = "gemini-flash-latest"
 
 def upload_file(path_to_file: str, mime_type: str = None):
     """Uploads a file to Gemini File API."""

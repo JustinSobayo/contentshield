@@ -16,9 +16,9 @@ app = FastAPI(title="Content Shield API")
 # Startup Log
 @app.on_event("startup")
 async def startup_event():
-    logger.info(f"🚀 Content Shield API starting up in {settings.ENVIRONMENT} mode")
+    logger.info(f"Content Shield API starting up in {settings.ENVIRONMENT} mode")
     if not settings.GEMINI_API_KEY:
-        logger.warning("⚠️ GEMINI_API_KEY is not set. AI features will fail.")
+        logger.warning("GEMINI_API_KEY is not set. AI features will fail.")
     logger.info(f"Frontend origin allowed: {settings.FRONTEND_ORIGIN}")
 
 # Rate Limiter Setup
@@ -37,7 +37,7 @@ def read_root():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False, # Must be False if using "*" for origins
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -8,8 +8,7 @@ class RedisService:
     def __init__(self):
         try:
             self.client = get_redis_client()
-            # Rapid check to see if we can connect
-            self.client.ping()
+            # Removed module-level ping to prevent startup delays
         except Exception:
             self.client = None
         self.ttl = 3600 * 24  # Cache for 24 hours

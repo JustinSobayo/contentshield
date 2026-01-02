@@ -1,215 +1,131 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import Hero from "@/components/Hero";
-import VideoUpload from "@/components/VideoUpload";
-import PlatformSelector from "@/components/PlatformSelector";
-import AnalysisResults from "@/components/AnalysisResults";
-import { Loader2, Shield } from "lucide-react";
+import Hero from "@/features/landing/components/Hero";
+import PlatformSelector from "@/features/analysis/components/PlatformSelector";
+import VideoUpload from "@/features/analysis/components/VideoUpload";
+import AnalysisResults from "@/features/analysis/components/AnalysisResults";
+import { analyzeContent } from "@/features/analysis/api/analyzeContent";
+import { AnalyzeResponse } from "@/features/analysis/types/analysis.types";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
-const Index = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+export default function Index() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [riskLevel, setRiskLevel] = useState<string>("");
-  const [analysisData, setAnalysisData] = useState<any>(null);
-
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setAnalysisComplete(false);
-    setAnalysisData(null);
-  };
-
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setSelectedPlatform(null);
-    setAnalysisComplete(false);
-    setAnalysisData(null);
-  };
-
-  const handlePlatformSelect = (platformId: string) => {
-    setSelectedPlatform(platformId);
-  };
+  const [results, setResults] = useState<AnalyzeResponse | null>(null);
+  const { toast } = useToast();
 
   const handleAnalyze = async () => {
-    if (!selectedFile || !selectedPlatform) return;
+    if (!file || !selectedPlatform) return;
 
     setIsAnalyzing(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('platform', selectedPlatform);
 
     try {
-      // Single step: Upload file directly to Gemini 1.5 Flash multimodal analysis
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('platform', selectedPlatform);
+      console.log("Starting analysis via feature API...");
+      const data = await analyzeContent(formData);
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      console.log("Analyze Request - API_URL:", API_URL);
-      console.log("Analyze Request - Fetching:", `${API_URL}/analyze`);
-      const analyzeResponse = await fetch(`${API_URL}/analyze`, {
-        method: 'POST',
-        body: formData // No Content-Type header needed, browser sets it for FormData
+      console.log("Analysis success:", data);
+      setResults(data);
+
+      toast({
+        title: "Analysis Complete",
+        description: `Successfully analyzed content for ${selectedPlatform}`,
       });
-
-      if (!analyzeResponse.ok) {
-        throw new Error('Analysis failed');
-      }
-
-      const analysis = await analyzeResponse.json();
-      setAnalysisData(analysis);
-      setRiskLevel(analysis.risk_level);
-      setAnalysisComplete(true);
     } catch (error) {
-      console.error('Analysis failed:', error);
-      alert('Analysis failed. Please try again.');
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Failed to analyze video. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const canAnalyze = selectedFile && selectedPlatform && !isAnalyzing;
+  const handleReset = () => {
+    setFile(null);
+    setResults(null);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-corporate">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <Shield className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-foreground">Content Shield</span>
-            </div>
-
-            <nav className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Features
-              </a>
-
-
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
+    <div className="min-h-screen bg-background">
       <Hero />
 
-      {/* Main Content */}
-      <main className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+      <main className="container mx-auto px-4 py-16 space-y-24">
+        {/* Step 1: Select Platform */}
+        <section id="platform-select" className="scroll-mt-24">
+          <PlatformSelector
+            selectedPlatform={selectedPlatform}
+            onPlatformSelect={setSelectedPlatform}
+            disabled={isAnalyzing || !!results}
+          />
+        </section>
 
-          {/* Analysis Results */}
-          {analysisComplete && (
-            <AnalysisResults
-              riskLevel={riskLevel}
-              platform={selectedPlatform!}
-              fileName={selectedFile!.name}
-              summaryRationale={analysisData?.summary_rationale}
-              issues={analysisData?.issues}
+        {/* Step 2: Upload Video (Only shown after platform selected) */}
+        {selectedPlatform && !results && (
+          <section id="upload" className="animate-in fade-in slide-in-from-bottom-8 duration-500">
+            <VideoUpload
+              onFileSelect={setFile}
+              selectedFile={file}
+              onClearFile={() => setFile(null)}
             />
-          )}
 
-          {/* Analysis Loading */}
-          {isAnalyzing && (
-            <div className="text-center py-16">
-              <div className="bg-card border border-border rounded-xl p-12 shadow-corporate max-w-2xl mx-auto">
-                <div className="flex flex-col items-center space-y-6">
-                  <div className="relative">
-                    <div className="w-16 h-16 border-4 border-primary/20 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-foreground">
-                      Analyzing Your Content
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Processing audio transcript and checking platform policies...
-                    </p>
-                  </div>
-
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-gradient-primary h-2 rounded-full animate-pulse" style={{ width: '65%' }}></div>
-                  </div>
-                </div>
+            {file && (
+              <div className="mt-8 text-center animate-in fade-in zoom-in duration-300">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center mx-auto space-x-2"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Analyzing Content...</span>
+                    </>
+                  ) : (
+                    <span>Analyze Video</span>
+                  )}
+                </button>
+                <p className="text-sm text-muted-foreground mt-4">
+                  This may take up to a minute depending on video length
+                </p>
               </div>
-            </div>
-          )}
+            )}
+          </section>
+        )}
 
-          {/* Upload and Platform Selection */}
-          {!analysisComplete && !isAnalyzing && (
-            <>
-              <VideoUpload
-                onFileSelect={handleFileSelect}
-                selectedFile={selectedFile}
-                onClearFile={handleClearFile}
-              />
+        {/* Step 3: Results */}
+        {results && (
+          <section id="results" className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <AnalysisResults
+              riskLevel={results.risk_level}
+              platform={results.platform}
+              fileName={file?.name || 'Uploaded Video'}
+              summaryRationale={results.summary_rationale}
+              issues={results.issues}
+            />
 
-              {selectedFile && (
-                <PlatformSelector
-                  selectedPlatform={selectedPlatform}
-                  onPlatformSelect={handlePlatformSelect}
-                />
-              )}
-
-              {/* Analyze Button */}
-              {canAnalyze && (
-                <div className="text-center">
-                  <Button
-                    onClick={handleAnalyze}
-                    size="lg"
-                    className="bg-gradient-primary text-primary-foreground hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-corporate"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      'Analyze Content'
-                    )}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Reset Button */}
-          {analysisComplete && (
-            <div className="text-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedFile(null);
-                  setSelectedPlatform(null);
-                  setAnalysisComplete(false);
-                  setRiskLevel("");
-                }}
-                size="lg"
+            <div className="mt-12 text-center">
+              <button
+                onClick={handleReset}
+                className="text-muted-foreground hover:text-foreground underline"
               >
                 Analyze Another Video
-              </Button>
+              </button>
             </div>
-          )}
-        </div>
+          </section>
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
-            <span>© 2025 Content Shield</span>
-            <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-            <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
-          </div>
+      <footer className="bg-muted/30 py-12 mt-24 border-t border-border">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <p>© 2025 Content Shield. Secure. Compliant. Ready.</p>
         </div>
       </footer>
     </div>
   );
-};
-
-export default Index;
+}

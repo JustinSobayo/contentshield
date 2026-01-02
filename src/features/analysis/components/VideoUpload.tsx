@@ -26,10 +26,10 @@ export default function VideoUpload({ onFileSelect, selectedFile, onClearFile }:
   const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     const videoFile = files.find(file => file.type.startsWith('video/'));
-    
+
     if (videoFile) {
       onFileSelect(videoFile);
     }
@@ -55,14 +55,14 @@ export default function VideoUpload({ onFileSelect, selectedFile, onClearFile }:
       <h2 className="text-3xl font-bold text-center text-foreground mb-8">
         Upload Your Video Content
       </h2>
-      
+
       {!selectedFile ? (
         <div
           className={cn(
             "border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300",
             "hover:border-primary hover:bg-primary/5 cursor-pointer",
-            isDragging 
-              ? "border-primary bg-primary/10 shadow-corporate" 
+            isDragging
+              ? "border-primary bg-primary/10 shadow-corporate"
               : "border-border bg-card"
           )}
           onDragOver={handleDragOver}
@@ -77,7 +77,7 @@ export default function VideoUpload({ onFileSelect, selectedFile, onClearFile }:
             )}>
               <Upload className="h-12 w-12" />
             </div>
-            
+
             <div className="space-y-2">
               <h3 className="text-xl font-semibold text-foreground">
                 Drag & drop your video file here
@@ -86,16 +86,16 @@ export default function VideoUpload({ onFileSelect, selectedFile, onClearFile }:
                 or click to browse files
               </p>
             </div>
-            
+
             <div className="text-sm text-muted-foreground">
               Supports MP4, AVI, MOV, WMV files up to 500MB
             </div>
-            
+
             <Button variant="outline" size="lg" className="pointer-events-none">
               Select Video File
             </Button>
           </div>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -120,7 +120,7 @@ export default function VideoUpload({ onFileSelect, selectedFile, onClearFile }:
                 </p>
               </div>
             </div>
-            
+
             <Button
               variant="ghost"
               size="sm"

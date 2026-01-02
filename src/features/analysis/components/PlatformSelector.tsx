@@ -39,17 +39,17 @@ interface PlatformSelectorProps {
   disabled?: boolean;
 }
 
-export default function PlatformSelector({ 
-  selectedPlatform, 
-  onPlatformSelect, 
-  disabled = false 
+export default function PlatformSelector({
+  selectedPlatform,
+  onPlatformSelect,
+  disabled = false
 }: PlatformSelectorProps) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold text-center text-foreground mb-8">
         Select Target Platform
       </h2>
-      
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {platforms.map((platform) => (
           <Button
@@ -80,7 +80,7 @@ export default function PlatformSelector({
           </Button>
         ))}
       </div>
-      
+
       {selectedPlatform && (
         <div className="mt-6 text-center">
           <div className="inline-flex items-center px-4 py-2 bg-success-light border border-success/20 rounded-full">

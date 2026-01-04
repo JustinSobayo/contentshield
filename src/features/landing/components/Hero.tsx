@@ -42,7 +42,7 @@ export default function Hero() {
             <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 shadow-corporate">
               <TrendingUp className="h-8 w-8 text-accent-primary mb-4 mx-auto" />
               <h3 className="text-lg font-semibold text-foreground mb-2">Risk Assessment</h3>
-              <p className="text-muted-foreground">Percentage-based takedown likelihood scoring</p>
+              <p className="text-muted-foreground">Clear Low, Medium, High risk level indicators</p>
             </div>
 
             <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 shadow-corporate">

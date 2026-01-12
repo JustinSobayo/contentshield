@@ -2,9 +2,13 @@
 
 A video content analysis platform powered by AI.
 
-## 🚀 Quick Start (Docker) - Recommended
+## Visit the Web Application - Recommended
 
-The easiest way to run Content Shield is using Docker. This ensures all dependencies (like FFmpeg and Python libraries) are installed automatically.
+
+
+## Run locally using Docker
+
+The easiest way to run Content Shield locally is using Docker. This ensures all dependencies (like FFmpeg and Python libraries) are installed automatically.
 
 ### Prerequisites
 *   [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.

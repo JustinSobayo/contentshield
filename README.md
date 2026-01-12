@@ -35,7 +35,7 @@ docker compose up --build
 
 ---
 
-## 🛠️ Manual Setup (No Docker)
+## Manual Setup (No Docker)
 
 If you prefer to run dependencies on your host machine directly.
 

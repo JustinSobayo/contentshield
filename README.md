@@ -4,7 +4,7 @@ A video content analysis platform powered by AI.
 
 ## Visit the Web Application - Recommended
 
-
+https://contentshieldai.vercel.app/
 
 ## Run locally using Docker
 

@@ -6,6 +6,7 @@ This folder contains policy documents for different platforms.
 - YouTube Community Guidelines
 - TikTok Community Guidelines  
 - Instagram Community Guidelines
+- Twitter Community Guidelines
 
 ## File Format:
 - PDF files are supported

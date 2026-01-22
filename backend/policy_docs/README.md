@@ -10,7 +10,7 @@ This folder contains policy documents for different platforms.
 
 ## File Format:
 - PDF files are supported
-- Documents should be named with platform prefix (e.g., `youtube_policies.pdf`)
+- Documents should be named with platform name (e.g., Youtube:`support.google.com-policy.pdf`, Twitter(X)`.(X)Twitter.pdf`, Tiktok:`.TikTok.pdf`, Instagram:`.Instagram.pdf`)
 - Documents will be automatically indexed when the server starts
 
 ## Adding New Documents:

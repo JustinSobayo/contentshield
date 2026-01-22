@@ -11,7 +11,6 @@ class Issue(BaseModel):
     timestamp: Optional[str] = None
     snippet: str
     rationale: str
-    policy_citations: List[str]
 
 class AnalyzeResponse(BaseModel):
     platform: str

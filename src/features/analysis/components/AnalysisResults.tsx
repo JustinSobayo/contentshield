@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileText, ExternalLink, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Shield, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface Issue {
@@ -11,7 +10,6 @@ interface Issue {
   timestamp?: string;
   snippet: string;
   rationale: string;
-  policy_citations: string[];
 }
 
 interface AnalysisResultsProps {
@@ -50,15 +48,6 @@ export default function AnalysisResults({
     rationale: issue.rationale
   }));
 
-  const recommendations = [
-    // Keep dummy recommendations for now or generate them from issues if possible
-    {
-      priority: "medium",
-      title: "Review Policy Violations",
-      description: "Address the specific issues flagged in the detailed report.",
-      action: "Check platform guidelines"
-    }
-  ];
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8">
@@ -159,100 +148,34 @@ export default function AnalysisResults({
           </CardHeader>
 
           <CardContent>
-            <Tabs defaultValue="flagged" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="flagged">Flagged Content</TabsTrigger>
-                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                <TabsTrigger value="policies">Policy References</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="flagged" className="space-y-4 mt-6">
-                {flaggedContent.map((item, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="font-mono">
-                        {item.timestamp}
-                      </Badge>
-                      <Badge
-                        variant={item.severity === 'high' ? 'destructive' :
-                          item.severity === 'medium' ? 'secondary' : 'outline'}
-                      >
-                        {item.severity.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="bg-muted/30 p-3 rounded border-l-4 border-l-primary">
-                      <p className="font-medium text-foreground">"{item.text}"</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Concern:</strong> {item.concern}
-                    </p>
-                    {item.rationale && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        <strong>Rationale:</strong> {item.rationale}
-                      </p>
-                    )}
+            <div className="space-y-4">
+              {flaggedContent.map((item, index) => (
+                <div key={index} className="border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="font-mono">
+                      {item.timestamp}
+                    </Badge>
+                    <Badge
+                      variant={item.severity === 'high' ? 'destructive' :
+                        item.severity === 'medium' ? 'secondary' : 'outline'}
+                    >
+                      {item.severity.toUpperCase()}
+                    </Badge>
                   </div>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="recommendations" className="space-y-4 mt-6">
-                {recommendations.map((rec, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">{rec.title}</h3>
-                      <Badge
-                        variant={rec.priority === 'high' ? 'destructive' :
-                          rec.priority === 'medium' ? 'secondary' : 'outline'}
-                      >
-                        {rec.priority.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground">{rec.description}</p>
-                    <div className="bg-success-light p-3 rounded border-l-4 border-l-success">
-                      <p className="text-sm text-success-foreground">
-                        <strong>Recommended Action:</strong> {rec.action}
-                      </p>
-                    </div>
+                  <div className="bg-muted/30 p-3 rounded border-l-4 border-l-primary">
+                    <p className="font-medium text-foreground">"{item.text}"</p>
                   </div>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="policies" className="space-y-4 mt-6">
-                <div className="space-y-4">
-                  <div className="border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-foreground">YouTube Community Guidelines</h3>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Policy
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Section 4.2.1 - Advertising and Sponsored Content Disclosure
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Concern:</strong> {item.concern}
+                  </p>
+                  {item.rationale && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      <strong>Rationale:</strong> {item.rationale}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      "Creators must clearly disclose when content includes paid promotions, sponsorships, or affiliate marketing."
-                    </p>
-                  </div>
-
-                  <div className="border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-foreground">FTC Advertising Guidelines</h3>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Policy
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      16 CFR Part 255 - Endorsement Guidelines
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      "Material connections between advertisers and endorsers must be clearly disclosed."
-                    </p>
-                  </div>
+                  )}
                 </div>
-              </TabsContent>
-            </Tabs>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

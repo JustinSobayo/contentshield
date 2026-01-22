@@ -74,8 +74,7 @@ async def analyze_content(
                     "category": "Category Name (e.g. Violence, Hate Speech, Dangerous Goods)",
                     "timestamp": "MM:SS (e.g. 01:23) or 'Entire Video'",
                     "snippet": "Visual description of the event OR text transcript",
-                    "rationale": "Why this violates policy",
-                    "policy_citations": ["Policy Name/Section"]
+                    "rationale": "Why this violates policy"
                 }}
             ]
         }}

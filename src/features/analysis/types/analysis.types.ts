@@ -3,7 +3,6 @@ export interface AnalyzedIssue {
     timestamp?: string;
     snippet: string;
     rationale: string;
-    policy_citations: string[];
 }
 
 export interface AnalyzeResponse {

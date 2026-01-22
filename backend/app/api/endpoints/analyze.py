@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from app.models.schemas import AnalyzeResponse, AnalyzeRequest
 from app.services.gemini_service import analyze_multimodal
 from app.services.redis_service import redis_service
+from app.services.rag_service import rag_service
 from app.core.security import limiter
 import hashlib
 import tempfile
@@ -23,29 +24,38 @@ async def analyze_content(
     Analyzes video content for policy violations using Gemini 1.5 Flash.
     """
     try:
-        # Create a temp file for the video
+        # Create a temp file for the video and generate hash without loading full file into memory
         suffix = os.path.splitext(file.filename or "")[1] or ".mp4"
+        sha256_hash = hashlib.sha256()
+        
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
+            while chunk := await file.read(8192):
+                sha256_hash.update(chunk)
+                tmp.write(chunk)
             tmp_path = tmp.name
 
-        # Generate cache key based on file content hash + platform
-        file_hash = hashlib.md5(content).hexdigest()
+        file_hash = sha256_hash.hexdigest()
         cache_key = f"analyze:{platform}:{file_hash}"
         
         # Check cache
         cached_result = redis_service.get_cached_analysis(cache_key)
         if cached_result:
-            # Clean up temp file
-            os.remove(tmp_path)
-            # Ensure the cached result matches the model
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
             return AnalyzeResponse(**cached_result)
 
-        # Construct Prompt
+        # Retrieve relevant policy documents using RAG
+        logger.info(f"Retrieving policies for platform: {platform}")
+        policy_context = rag_service.query(platform, "What are the core community guidelines and safety policies?")
+        
+        # Construct Prompt with RAG Context
         prompt = f"""
         You are a content compliance expert for {platform}.
-        Analyze this video for policy violations.
+        Analyze this video for policy violations based on the following specific policy context:
+
+        --- RELEVANT POLICY CONTEXT ---
+        {policy_context}
+        --- END OF CONTEXT ---
         
         CRITICAL INSTRUCTION: You MUST analyze both the AUDIO (transcript) and the VISUALS (frames).
         Look specifically for:

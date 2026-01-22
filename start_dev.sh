@@ -7,11 +7,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "🚀 Starting Content Shield Development Environment..."
+echo "Starting Content Shield Development Environment..."
 
 # Check for .env
 if [ ! -f backend/.env ]; then
-    echo "⚠️  WARNING: backend/.env not found!"
+    echo "WARNING: backend/.env not found!"
     echo "Please create backend/.env and add your GEMINI_API_KEY before running."
     exit 1
 fi

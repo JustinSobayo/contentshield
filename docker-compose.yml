@@ -6,14 +6,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Mount source code for hot reloading
       - ./backend:/app
-      # Vector DB Persistence (optional, assuming chroma_db is in backend dir)
       - ./backend/chroma_db:/app/chroma_db
-      # Policy Docs Persistence
       - ./backend/policy_docs:/app/policy_docs
     environment:
-      # Pass through environment variables from host .env
       - FRONTEND_ORIGIN=http://localhost:8080
       - REDIS_URL=redis://redis:6379/0
     env_file:
@@ -36,12 +32,10 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Mount source code for hot reloading
       - ./src:/app/src
       - ./public:/app/public
       - ./index.html:/app/index.html
       - ./vite.config.ts:/app/vite.config.ts
-      # Prevent node_modules from being overwritten by the bind mount
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000

@@ -12,5 +12,11 @@ redis
 # Google Gemini (Gen AI)
 google-genai
 
-# LlamaIndex (keeping core for potential future usage, though simplified now)
+# LlamaIndex & RAG
 llama-index-core
+llama-index-embeddings-gemini
+llama-index-llms-gemini
+llama-index-vector-stores-chroma
+chromadb
+llama-index-readers-file
+pypdf

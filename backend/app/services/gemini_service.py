@@ -35,7 +35,7 @@ def wait_for_files_active(files):
         while file.state == "PROCESSING":
             if time.time() - start_time > 300: # 5 minute timeout
                 raise Exception("File processing timed out")
-            time.sleep(2)
+            time.sleep(0.75)
             file = client.files.get(name=file_obj.name)
         if file.state != "ACTIVE":
             raise Exception(f"File {file.name} failed to process: {file.state}")

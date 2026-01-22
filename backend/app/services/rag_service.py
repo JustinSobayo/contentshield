@@ -73,6 +73,14 @@ class RAGService:
             reader = SimpleDirectoryReader(input_dir=self.data_dir)
             documents = reader.load_data()
             
+            # Diagnostic logging for file discovery
+            if documents:
+                file_names = list(set([doc.metadata.get('file_name', 'unknown') for doc in documents]))
+                logger.info(f"RAG Ingestion: Found {len(file_names)} unique files resulting in {len(documents)} total pages/chunks.")
+                for name in sorted(file_names):
+                    pcount = sum(1 for d in documents if d.metadata.get('file_name') == name)
+                    logger.info(f"  - {name} ({pcount} pages)")
+            
             if not documents:
                 logger.warning("No documents found to ingest.")
                 return

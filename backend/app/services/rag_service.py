@@ -2,12 +2,10 @@ import os
 import logging
 from typing import List, Optional
 from app.core.config import settings
-import google.generativeai as genai
 
-# CRITICAL: Configure API key for the underlying library
+# Set API key in environment for underlying libraries
 if settings.GEMINI_API_KEY:
     os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-    genai.configure(api_key=settings.GEMINI_API_KEY)
 
 import chromadb
 from llama_index.core import (
@@ -17,17 +15,17 @@ from llama_index.core import (
     Settings,
 )
 from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.embeddings.gemini import GeminiEmbedding
-from llama_index.llms.gemini import Gemini
+from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+from llama_index.llms.google_genai import GoogleGenAI
 
 logger = logging.getLogger(__name__)
 
-# Configure LlamaIndex to use Gemini
-embed_model = GeminiEmbedding(
-    model_name="models/embedding-001", api_key=settings.GEMINI_API_KEY
+# Configure LlamaIndex to use Google GenAI (Gemini)
+embed_model = GoogleGenAIEmbedding(
+    model_name="gemini-embedding-001", api_key=settings.GEMINI_API_KEY
 )
 Settings.embed_model = embed_model
-Settings.llm = Gemini(model="models/gemini-flash-latest", api_key=settings.GEMINI_API_KEY)
+Settings.llm = GoogleGenAI(model="gemini-2.0-flash", api_key=settings.GEMINI_API_KEY)
 
 class RAGService:
     def __init__(self, persist_dir: Optional[str] = None, data_dir: Optional[str] = None):

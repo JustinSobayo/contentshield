@@ -1,86 +1,122 @@
 # Content Shield
 
-A video content analysis platform powered by AI.
+Content Shield is a web app that helps creators check a video for social platform policy risk before posting it.
 
-## Visit the Web Application - Recommended
+## The Problem It Solves
 
-https://contentshieldai.vercel.app/
+If you post a video without reviewing it carefully, you can run into:
 
-## Run locally using Docker
+- platform takedowns
+- limited reach or demonetization
+- missed policy issues in the audio, visuals, or on-screen text
+- uncertainty about whether a video is risky enough to rewrite or re-edit
 
-The easiest way to run Content Shield locally is using Docker. This ensures all dependencies (like FFmpeg and Python libraries) are installed automatically.
+Content Shield is built to make that first review faster. You upload a video, choose the platform, and get a simple risk assessment with flagged issues and a short explanation.
 
-### Prerequisites
-*   [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+## What The App Does
 
-### 1. Setup Environment
-Create the backend environment file and add your API key:
+- lets you choose a target platform: YouTube, TikTok, Instagram, or X
+- uploads a video to the backend for analysis
+- uses Gemini to review the video
+- pulls platform policy context from local policy documents using retrieval
+- returns a `Low`, `Medium`, or `High` risk level
+- returns a short summary of why that risk level was assigned
+- returns flagged issues with timestamps, snippets, and rationale
 
-```bash
-cp backend/env.example backend/.env
-# Open backend/.env on your computer and paste your GEMINI_API_KEY inside
+## How It Works
+
+1. The React frontend lets the user pick a platform and upload a video.
+2. The FastAPI backend accepts the file at `POST /analyze`.
+3. The backend retrieves policy context from documents in `backend/policy_docs`.
+4. Gemini analyzes the uploaded video with that policy context.
+5. The app returns a structured result for the frontend to display.
+
+## Stack
+
+- frontend: React, Vite, TypeScript, Tailwind
+- backend: FastAPI
+- AI: Google Gemini
+- retrieval: LlamaIndex + ChromaDB
+- caching and rate limiting: Redis
+
+## Run With Docker
+
+Docker is the easiest way to run the full project because it starts the frontend, backend, and Redis together.
+
+### 1. Create the backend env file
+
+Copy `backend/env.example` to `backend/.env` and add your Gemini key:
+
+```env
+GEMINI_API_KEY=your_api_key_here
 ```
 
-### 2. Run the App
-Start the application containers:
+### 2. Start the app
 
 ```bash
 docker compose up --build
 ```
-*(The first run may take a few minutes to download dependencies. subsequent runs will be instant.)*
 
-### 3. Access
-*   **Web App**: [http://localhost:8080](http://localhost:8080)
-*   **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+### 3. Open the app
 
----
+- frontend: `http://localhost:8080`
+- backend docs: `http://localhost:8000/docs`
 
-## Manual Setup (No Docker)
+## Run Without Docker
 
-If you prefer to run dependencies on your host machine directly.
+Use this if you want to run the frontend and backend yourself.
 
-### 1. Backend Setup
-Requires **Python 3.10+** and **FFmpeg** installed on your system.
+### Requirements
+
+- Python 3.10+
+- Node.js 20+
+- Redis
+- FFmpeg
+
+### 1. Backend setup
+
+Make sure Redis is running locally, then create `backend/.env` and add your Gemini key. Set `REDIS_URL` to your local Redis instance.
+
+Example:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+REDIS_URL=redis://localhost:6379/0
+```
+
+Install backend dependencies:
 
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python -m venv venv
+```
+
+Activate the virtual environment, then install packages:
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Variables
-```bash
-cp backend/env.example backend/.env
-# Edit backend/.env and add your GEMINI_API_KEY
-```
-
-### 3. Frontend Setup
-Requires **Node.js 20+**.
+Start the backend from the `backend` folder:
 
 ```bash
-npm install
-```
-
-### 4. Running Locally
-You can start both servers with the helper script:
-
-```bash
-chmod +x start_dev.sh
-./start_dev.sh
-```
-
-Or run them manually:
-
-**Backend:**
-```bash
-source backend/venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend:**
+### 2. Frontend setup
+
+From the project root:
+
 ```bash
-npm run dev
+npm ci
+npm run dev -- --port 8080
 ```
 
-Open [http://localhost:8080](http://localhost:8080) in your browser.
+Open `http://localhost:8080`.
+
+## Project Notes
+
+- policy documents are stored in `backend/policy_docs`
+- the local vector database is stored in `backend/chroma_db`
+- Redis is used for caching analysis results and rate limiting
+- the frontend defaults to `http://localhost:8000` for the API if `VITE_API_URL` is not set

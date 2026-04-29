@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Shield, Clock, FileText } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Shield, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,23 +107,11 @@ export default function AnalysisResults({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <Clock className="h-6 w-6 text-accent-primary mx-auto mb-2" />
-              <div className="text-sm font-medium text-foreground">Analysis Time</div>
-              <div className="text-xs text-muted-foreground">2.3 seconds</div>
-            </div>
-
+          <div className="mt-8 max-w-sm mx-auto">
             <div className="bg-muted/50 p-4 rounded-lg">
               <FileText className="h-6 w-6 text-accent-primary mx-auto mb-2" />
               <div className="text-sm font-medium text-foreground">Issues Found</div>
               <div className="text-xs text-muted-foreground">{flaggedContent.length} potential concerns</div>
-            </div>
-
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <CheckCircle2 className="h-6 w-6 text-success mx-auto mb-2" />
-              <div className="text-sm font-medium text-foreground">Confidence</div>
-              <div className="text-xs text-muted-foreground">94% accuracy</div>
             </div>
           </div>
 
